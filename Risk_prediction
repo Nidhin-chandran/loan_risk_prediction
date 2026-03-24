@@ -1,0 +1,89 @@
+import streamlit as st
+import pickle as pk
+from PIL import Image
+import pandas as pd
+
+model = pk.load(open('Loan_prediction_model1','rb'))
+encoded = pk.load(open('Loan_prediction_encoded1','rb'))
+
+
+
+def show():
+    st.markdown("""
+            <style>
+            .main {
+                background: linear-gradient(135deg, #1f4037, #99f2c8);
+            }
+            h1 {
+                text-align: center;
+                color: #ffffff;
+            }
+            .stButton>button {
+                background-color: #4CAF50;
+                color: white;
+                border-radius: 10px;
+                height: 50px;
+                width: 100%;
+                font-size: 18px;
+            }
+            .stNumberInput input {
+                border-radius: 10px;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+    st.title('Loan Risk Prediction')
+    img = Image.open('credit_score.jpg')
+    st.image(img,width=700)
+
+    age = st.number_input('Enter your age:',value=None)
+    income = st.number_input('Enter your income:',value=None)
+    loan_amount = st.number_input('Enter your loan amount:',value=None)
+    credit_score = st.number_input('Enter your credit score:',value=None)
+    gender = st.selectbox('Enter your gender:',encoded[0].classes_,index=None)
+    education = st.selectbox('Enter your education:',encoded[1].classes_,index=None)
+    employment = st.selectbox('Enter your employment type:',encoded[3].classes_,index=None)
+
+
+    predict = st.button('Check🔍')
+
+
+    if predict:
+
+        gender_encod = encoded[0].transform([gender])[0]
+        education_encod = encoded[1].transform([education])[0]
+        employment_encod = encoded[3].transform([employment])[0]
+
+        features = pd.DataFrame([[age,income,loan_amount,credit_score,
+                                  gender_encod,education_encod,employment_encod]],
+                                columns=["Age","Income","LoanAmount","CreditScore",
+                                         "Gender","Education","EmploymentType"])
+
+
+        result = model.predict(features)
+
+        with st.spinner("Processing your application..."):
+            import time
+            time.sleep(5)
+
+
+        if result[0] == 0:
+            st.markdown("""
+                        <div style='padding:20px; border-radius:12px; background-color:#fdecea; color:#b71c1c; text-align:center;'>
+                            <h2>❌ Not Eligible</h2>
+                            <p>Unfortunately, you do not meet the loan criteria.</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+        else:
+            st.balloons()
+            st.markdown("""
+                            <div style='padding:20px; border-radius:12px; background-color:#e8f5e9; color:#1b5e20; text-align:center;'>
+                                <h2>✅ Approved!</h2>
+                                <p>Congratulations! You are eligible for the loan 🚀</p>
+                            </div>
+                        """, unsafe_allow_html=True)
+
+
+
+
+show()
